@@ -4,6 +4,7 @@ import json
 import csv
 import logging
 from time import sleep
+import re
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 from src.utils.helpers import get_html
@@ -25,28 +26,34 @@ def parse_product(soup, url):
             
     product_title = ''.join([t for t in brand_div.strings if t.strip() and t != brand]).strip()
     
-    
+
     ingredients = None
-    ingredient_section = soup.find("div", class_="styles-module_productDescriptionItem--GvY1O")
-    
-    if ingredient_section:
-        content_div = ingredient_section.find("div", class_="styles-module_productDescriptionContent--76j9I")
-        if content_div:
-            p_tag = content_div.find("p")
-            if p_tag:
-                ingredients = p_tag.get_text(strip=True)
-            else:
-                ingredients = content_div.get_text(strip=True)
-    
+    for section in soup.find_all("div", class_="styles-module_productDescriptionItem--GvY1O"):
+        button = section.find("button", class_="styles-module_mobileTitleButton--o7AkB")
+        if button and button.find("span") and "Składniki" in button.get_text():
+            content_div = section.find("div", class_="styles-module_productDescriptionContent--76j9I")
+            if content_div:
+                p_tag = content_div.find("p")
+                if p_tag:
+                    ingredients_text = p_tag.get_text(strip=True)
+                else:
+                    ingredients_text = content_div.get_text(strip=True)
+
+                # usuń prefix jeśli istnieje
+                ingredients = re.sub(r'^(Ingredients:|Składniki:)\s*', '', ingredients_text, flags=re.IGNORECASE).strip()
+            break
+
+    # --- fallback, gdy nie znaleziono sekcji Składniki ---
     if not ingredients:
         for p in soup.find_all("p"):
-            if "Ingredients:" in p.get_text():
+            text = p.get_text(separator=" ", strip=True)
+            if "Ingredients" in text or "Składniki" in text:
                 span = p.find("span")
                 if span:
-                    ingredients = span.get_text(strip=True)
+                    ingredients_text = span.get_text(strip=True)
                 else:
-                    full_text = p.get_text(separator=" ", strip=True)
-                    ingredients = full_text.split("Ingredients:")[1].strip()
+                    ingredients_text = text
+                ingredients = re.sub(r'^(Ingredients:|Składniki:)\s*', '', ingredients_text, flags=re.IGNORECASE).strip()
                 break
 
     ean = None
@@ -68,7 +75,7 @@ def parse_product(soup, url):
         "url": url
     }
 
-def main():
+def scrape_inci():
     
     results = []
     
@@ -96,7 +103,6 @@ def main():
     with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
     logging.info(f"Scraping completed. Total products scraped: {len(results)}. Data saved to {OUTPUT_JSON}")
-       
-           
+
 if __name__ == "__main__":
-    main()
+    scrape_inci()

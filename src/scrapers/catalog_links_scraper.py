@@ -20,6 +20,9 @@ OUTPUT_FILE = "data/product_links.csv"
 all_product_links = []
 
 def get_last_page(soup):
+    if not soup:
+        return 1
+        
     last_page_span = soup.find("span", {"data-testid": "pagination-last-page"})
     if last_page_span and last_page_span.get_text().isdigit():
         try:
@@ -60,28 +63,24 @@ def scrape_all_categories():
         first_page_url = category_template.format(1)
         soup = get_html(first_page_url)
         last_page = get_last_page(soup)
-        print(f" Found {last_page} pages in category {index}")
+        print(f" \nFound {last_page} pages in category {index}")
     
-    for page_num in range(1, last_page + 1):
-        page_url = category_template.format(page_num)
-        print(f"Scraping page {page_num} of category {index}")
-        
-        soup = get_html(page_url)
-        product_links = get_product_links(soup)
-        print(f" Found {len(product_links)} products on page {page_num}")
-        
-        with open(OUTPUT_FILE, "a", encoding="utf-8", newline="") as f:
-            writer = csv.writer(f)
-            for link in product_links:
-                if link not in all_product_links:
-                    writer.writerow([link])
-                    all_product_links.add(link)
-                    
-        sleep(1)
-    
+        for page_num in range(1, last_page + 1):
+            page_url = category_template.format(page_num)
+            print(f"Scraping page {page_num} of category {index}")
+            
+            soup = get_html(page_url)
+            product_links = get_product_links(soup)
+            print(f" Found {len(product_links)} products on page {page_num}")
+            
+            with open(OUTPUT_FILE, "a", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                for link in product_links:
+                    if link not in all_product_links:
+                        writer.writerow([link])
+                        all_product_links.add(link)
+                        
+            sleep(1)
+            
 if __name__ == "__main__":
-    start_time = time.time()
     scrape_all_categories()
-    end_time = time.time()
-    print(f"Scraping completed in {end_time - start_time:.2f} seconds")
-        
