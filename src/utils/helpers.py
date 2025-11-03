@@ -8,7 +8,7 @@ HEADERS = {
 
 def get_html(url):
     try:
-        response = requests.get(url, headers=HEADERS)
+        response = requests.get(url, headers=HEADERS, timeout=20)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
         with open("html.txt",  "w", encoding="utf-8") as f:

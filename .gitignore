@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 html.txt
 rossmann.json
+
+data/products_data.json
+data/product_links.csv
